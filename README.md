@@ -110,9 +110,31 @@ Create a repository containing the following `Dockerfile`:
     respawn
     console log
     kill signal SIGINT
-    exec /usr/bin/docker run -rm -p 80:80 apache2-demo
+    exec /usr/bin/docker run -rm -p 127.0.0.1:8000:80 apache2-demo
 
-Commit these two files using git and run:
+Here, we bind port 80 on the container to port 8000 on the host's internal
+interface.  If we were setting up a public mail server, we would use `-p
+25:25` to bind port 25 on the container to port 25 on the host.  But in the
+case of port 80, we're going to want to share it between multiple
+containers using a forwarding proxy.  To do this, we need to add a third
+file, `apache2-demo.nginx`:
+
+    server {
+      listen 80 default_server;
+    
+      # Run as a catch-all server for demo purposes.
+      server_name _;
+    
+      # Alternatively, see http://wiki.nginx.org/ServerBlockExample for examples
+      # on how to set up multiple sites with different hostnames.
+      #server_name vhost.example.com;
+    
+      location / {
+        proxy_pass http://127.0.0.1:8000/;
+      }
+    }
+
+Commit these three files using git and run:
 
     git remote add docker-dev git@docker-dev.local:apache2-demo.git
     git push docker-dev master

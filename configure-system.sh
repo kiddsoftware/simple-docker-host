@@ -16,7 +16,7 @@ echo 'deb http://get.docker.io/ubuntu docker main' > /etc/apt/sources.list.d/doc
 # Install docker and some other things we'll need.
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -q -y lxc-docker git
+apt-get install -q -y lxc-docker git nginx-full
 
 # Configure docker to not restart running containers on boot, since it's
 # unreliable at the best of times, and we want to use upstart.
@@ -36,6 +36,9 @@ fi
 
 # Reload our newly-configured Docker.
 service docker restart
+
+# Configure nginx.
+rm -f /etc/nginx/sites-enabled/default
 
 # Install our gitreceive hooks.
 cd /usr/local/bin
@@ -71,6 +74,15 @@ if [ -e "$name.conf" ]; then
     sudo cp "$name.conf" /etc/init
     echo "-----> Launching image: $name"
     sudo service "$name" restart
+fi
+
+# Add any custom configuration to our nginx proxy server.
+if [ -e "$name.nginx" ]; then
+    echo "-----> Installing nginx configuration"
+    sudo cp "$name.nginx" "/etc/nginx/sites-available/$name"
+    sudo ln -sf "/etc/nginx/sites-available/$name" "/etc/nginx/sites-enabled/$name"
+    echo "-----> Reloading nginx"
+    sudo service nginx reload
 fi
 EOF
 usermod -a -G docker git # Gives full root privileges via docker.
