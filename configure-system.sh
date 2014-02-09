@@ -21,63 +21,21 @@ apt-get install -q -y lxc-docker git
 # Configure docker to not restart running containers on boot, since it's
 # unreliable at the best of times, and we want to use upstart.
 sed -i 's/.*DOCKER_OPTS=.*/DOCKER_OPTS=\"-r=false\"/g' /etc/default/docker
-service docker restart
-sleep 2 # Docker sometimes starts a little slowly.
 
-# Install a private registry, if we don't already have one.
-# Based on Dockerfile from https://github.com/dotcloud/docker-registry
-cd /root
-if [ ! -d docker-registry ]; then 
-  git clone https://github.com/dotcloud/docker-registry.git
-fi
-cd docker-registry
-git reset --hard
-git pull
-cat <<EOF > config.yml
-dev:
-    loglevel: info
-    storage: local
-    storage_path: /data/registry
-EOF
-cat <<EOF > Dockerfile
-FROM ubuntu:12.04
+# Don't start things which depend on Docker until it's actually present.
+if ! grep post-start /etc/init/docker.conf; then
+  cat <<EOF >> /etc/init/docker.conf
 
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && \
-    apt-get install -y git-core build-essential python-dev \
-       libevent1-dev python-openssl liblzma-dev wget && \
-    rm /var/lib/apt/lists/*_*
-RUN cd /tmp && wget http://python-distribute.org/distribute_setup.py
-RUN cd /tmp && python distribute_setup.py; easy_install pip && \
-    rm distribute_setup.py
-ADD . /docker-registry
-RUN cd /docker-registry && pip install -r requirements.txt
-RUN cp --no-clobber /docker-registry/config.yml /docker-registry/config/config.yml
-
-EXPOSE 5000
-
-CMD cd /docker-registry && ./setup-configs.sh && ./run.sh
-EOF
-docker build -t emk/registry .
-
-# Install an Upstart config file for our registry and (re)start it.
-# Based on http://docs.docker.io/en/latest/use/host_integration/
-cat <<EOF > /etc/init/docker-registry.conf
-description "Docker registry"
-author "Eric Kidd"
-start on filesystem and started docker
-stop on runlevel [!2345]
-respawn
-script
-  # Wait for docker to finish starting up first.
-  FILE=/var/run/docker.sock
-  while [ ! -e /var/run/docker.sock ] ; do
-    inotifywait -t 2 -e create /var/run/
-  done
-  /usr/bin/docker run -rm -p 127.0.0.1:5000:5000 -v /data/registry:/data/registry  emk/registry
+post-start script
+    while [ ! -e /var/run/docker.sock ] ; do
+      inotifywait -t 2 -e create /var/run/
+    end
 end script
 EOF
-service docker-registry restart
+fi
+
+# Reload our newly-configured Docker.
+service docker restart
 
 # Install our gitreceive hooks.
 cd /usr/local/bin
@@ -90,19 +48,32 @@ cat <<'EOF' > /home/git/receiver
 #!/bin/bash -e
 
 # Decide on an image tag.
-name="emk/$(basename $1 .git)"
+name="$(basename $1 .git)"
 
 # Store our exported git tree in a temp directory (and make sure we delete
 # it on exit).
+echo "-----> Unpacking source tree"
 WORKDIR=$(mktemp -d build-imageXXXXXX)
 function cleanup {
-  rm  -rf "$WORKDIR"
+    rm  -rf "$WORKDIR"
 }
 trap cleanup EXIT
 cat | tar -x -C "$WORKDIR"
 
 # Build our docker image.
 cd "$WORKDIR"
+echo "-----> Building image: $name"
 docker build -t "$name" .
+
+# Install our upstart goodies if we have them.
+if [ -e "$name.conf" ]; then
+    echo "-----> Registering image with upstart: $name"
+    sudo cp "$name.conf" /etc/init
+    echo "-----> Launching image: $name"
+    sudo service "$name" restart
+fi
 EOF
-usermod -a -G docker git
+usermod -a -G docker git # Gives full root privileges via docker.
+usermod -a -G admin git  # Gives full root privileges via sudo.
+
+echo "Successfully provisioned!"
