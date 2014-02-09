@@ -76,4 +76,4 @@ EOF
 usermod -a -G docker git # Gives full root privileges via docker.
 usermod -a -G admin git  # Gives full root privileges via sudo.
 
-echo "Successfully provisioned!"
+echo "Successfully provisioned host!"

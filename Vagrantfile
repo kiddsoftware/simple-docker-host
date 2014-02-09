@@ -9,12 +9,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # options are documented and commented below. For a complete reference,
   # please see the online documentation at vagrantup.com.
 
-  # Every Vagrant virtual environment requires a box to build off of.
+  # Every Vagrant virtual environment requires a box to build off of.  This
+  # can be build using the files in the precise64-docker directory.
   config.vm.box = "precise64-docker"
 
   # The url from where the 'config.vm.box' box will be fetched if it
   # doesn't already exist on the user's system.
   # config.vm.box_url = "http://domain.com/path/to/above.box"
+
+  # Assign a hostname.  This will be available as 'docker-dev.local'
+  config.vm.hostname = "docker-dev"
 
   # Create a forwarded port mapping which allows access to a specific port
   # within the machine from a port on the host machine. In the example below,
@@ -23,7 +27,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-  # config.vm.network :private_network, ip: "192.168.33.10"
+  config.vm.network :private_network, ip: "192.168.33.42"
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -61,5 +65,5 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # We only do this under Vagrant.  This makes it easier to call docker
   # commands, which has the side-effect of making the vagrant user
   # root-equivalent.
-  config.vm.provision "shell", inline: 'usermod -a -G docker vagrant'
+  config.vm.provision "shell", path: "configure-vm.sh"
 end
