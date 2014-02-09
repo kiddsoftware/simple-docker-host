@@ -24,10 +24,12 @@ But none of these quite meet my needs yet.  I'm looking for a system which:
 * Allows arbitrary docker services to be deployed using `git push`,
   including web apps, mail servers, or anything else which can be
   containerized.
+* Provides a forwarding proxy server which can route requests to the correct
+  web app.
 * Can be deployed in minutes to almost any hosted Ubuntu 12.04 LTS server
   running Linux 3.8 or later.
 * Can be run locally with Vagrant for development and testing.
-* Is small and unobtrusive enough to be thrown away when one of the above
+* Is small and unobtrusive enough to be thrown away once one of the above
   projects matures.
 
 The solution: a low-rent CoreOS knockoff using `git push` to create and
@@ -50,8 +52,8 @@ To configure your account on the server:
 
     cat ~/.ssh/id_rsa.pub | vagrant ssh -c "sudo gitreceive upload-key `whoami`"
 
-To deploy a project to the server, make sure it has a `Dockerfile` and a
-`myproject.conf` file telling Upstart how to run it (see below).  Then run:
+To deploy a project to the server, make sure it has a `Dockerfile` and an
+`upstart.conf` file telling Upstart how to run it (see below).  Then run:
 
     git remote add docker-dev git@docker-dev.local:myproject.git
     git push docker-dev master
@@ -72,7 +74,9 @@ updates, and do any other standard server configuration you like to do.
 The goal is produce a server with nothing much except an ssh daemon.
 
 Once your kernel is ready, upload and run the `configure-system.sh` script
-as root.  This should finish configuring the system.
+as root.  This should finish configuring the system.  This script is
+"idempotent", in the usual DevOps sense, which means if you run it more
+than once, it shouldn't cause any problems.
 
 Finally, make sure that you can log into the remote server via ssh and use
 `sudo`.  Once that's in place, run:
@@ -101,7 +105,7 @@ Create a repository containing the following `Dockerfile`:
     
     CMD /usr/sbin/apache2 -DFOREGROUND
 
-...and the following `apache2-demo.conf` file:
+...and the following `upstart.conf` file:
 
     description "Apache 2 demo server"
     author "Eric Kidd"
@@ -117,7 +121,7 @@ interface.  If we were setting up a public mail server, we would use `-p
 25:25` to bind port 25 on the container to port 25 on the host.  But in the
 case of port 80, we're going to want to share it between multiple
 containers using a forwarding proxy.  To do this, we need to add a third
-file, `apache2-demo.nginx`:
+file, `nginx-proxy.conf`:
 
     server {
       listen 80 default_server;
@@ -136,6 +140,9 @@ file, `apache2-demo.nginx`:
 
 Commit these three files using git and run:
 
+    git init
+    git add Dockerfile upstart.conf nginx-proxy.conf
+    git commit -m "Create sample apache project"
     git remote add docker-dev git@docker-dev.local:apache2-demo.git
     git push docker-dev master
 

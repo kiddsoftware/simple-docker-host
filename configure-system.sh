@@ -69,17 +69,17 @@ echo "-----> Building image: $name"
 docker build -t "$name" .
 
 # Install our upstart goodies if we have them.
-if [ -e "$name.conf" ]; then
+if [ -e upstart.conf ]; then
     echo "-----> Registering image with upstart: $name"
-    sudo cp "$name.conf" /etc/init
+    sudo cp upstart.conf "/etc/init/$name.conf"
     echo "-----> Launching image: $name"
     sudo service "$name" restart
 fi
 
 # Add any custom configuration to our nginx proxy server.
-if [ -e "$name.nginx" ]; then
-    echo "-----> Installing nginx configuration"
-    sudo cp "$name.nginx" "/etc/nginx/sites-available/$name"
+if [ -e "nginx-proxy.conf" ]; then
+    echo "-----> Installing nginx proxy configuration"
+    sudo cp nginx-proxy.conf "/etc/nginx/sites-available/$name"
     sudo ln -sf "/etc/nginx/sites-available/$name" "/etc/nginx/sites-enabled/$name"
     echo "-----> Reloading nginx"
     sudo service nginx reload
