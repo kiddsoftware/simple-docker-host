@@ -86,6 +86,6 @@ if [ -e "nginx-proxy.conf" ]; then
 fi
 EOF
 usermod -a -G docker git # Gives full root privileges via docker.
-usermod -a -G admin git  # Gives full root privileges via sudo.
+usermod -a -G sudo git  # Gives full root privileges via sudo.
 
 echo "Successfully provisioned host!"
