@@ -1,4 +1,19 @@
-## What is this?
+## simple-docker-host
+
+**WARNING: Experimental.**
+
+Configure a minimilist Ubuntu 12.04 LTS host running Docker, Upstart and an
+nginx forwarding proxy.  Deploy arbitrary services packaged as Docker
+containers.
+
+Services are represented as git repositories containing a `Dockerfile`, an
+Upstart service declaration, and an optional nginx proxy config.  Services
+can be created and deployed with a single `git push` thanks to
+[gitreceive][].
+
+[gitreceive]: https://github.com/progrium/gitreceive
+
+### How is this different from Dokku/Flynn/Deis/CoreOS/etc?
 
 Right now, there are a bunch of interesting projects trying to make it easy
 to deploy services with [Docker][]:
@@ -42,7 +57,7 @@ deploy images, and Upstart to manage running containers.
 [CoreOS]: https://coreos.com/
 [OpenStack]: https://wiki.openstack.org/wiki/Docker
 
-## Running locally with Vagrant
+### Running locally with Vagrant
 
 To build and provision a server in Vagrant:
 
@@ -61,7 +76,7 @@ To deploy a project to the server, make sure it has a `Dockerfile` and an
 This should create the remote git repository, build a docker image named
 `myproject`, install `myproject.conf`, and restart the server.
 
-## Running on a hosted Ubuntu server
+### Running on a hosted Ubuntu server
 
 This hasn't been tested yet, but in theory, you need to make sure the
 remote server is running Ubuntu 12.04 LTS with Linux kernel 3.8 or greater.
@@ -87,7 +102,7 @@ Finally, make sure that you can log into the remote server via ssh and use
 [ubuntu]: http://docs.docker.io/en/latest/installation/ubuntulinux/
 [linode]: https://blog.linode.com/2014/01/03/docker-on-linode/
 
-## An example service
+### An example service
 
 Create a repository containing the following `Dockerfile`:
 
