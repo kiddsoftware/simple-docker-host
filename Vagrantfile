@@ -15,7 +15,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # The url from where the 'config.vm.box' box will be fetched if it
   # doesn't already exist on the user's system.
-  # config.vm.box_url = "http://domain.com/path/to/above.box"
+  config.vm.box_url = "https://s3.amazonaws.com/kiddsoftware-vagrant/precise64-docker.box"
 
   # Assign a hostname.  This will be available as 'docker-dev.local'
   config.vm.hostname = "docker-dev"
