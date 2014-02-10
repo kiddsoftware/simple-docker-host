@@ -7,9 +7,8 @@ nginx forwarding proxy.  Deploy arbitrary services packaged as Docker
 containers.
 
 Services are represented as git repositories containing a `Dockerfile`, an
-Upstart service declaration, and an optional nginx proxy config.  Services
-can be created and deployed with a single `git push` thanks to
-[gitreceive][].
+`upstart.conf`, and an optional `nginx-proxy.conf`.  Services can be
+created and deployed with a single `git push` thanks to [gitreceive][].
 
 [gitreceive]: https://github.com/progrium/gitreceive
 
@@ -78,29 +77,46 @@ This should create the remote git repository, build a docker image named
 
 ### Running on a hosted Ubuntu server
 
-This hasn't been tested yet, but in theory, you need to make sure the
-remote server is running Ubuntu 12.04 LTS with Linux kernel 3.8 or greater.
-See [the official Ubuntu instructions][ubuntu] for details on updating the
-kernel, but don't bother installing docker itself yet.  For Linode, see
-[their blog][linode].  For other hosting environments, search the web.
+Make sure the remote server is running Ubuntu 12.04 LTS with Linux kernel
+3.8 or greater.  See [the official Ubuntu instructions][ubuntu] for details
+on updating the kernel, but don't bother installing docker itself yet.  For
+Linode, see [their blog][linode].  For other hosting environments, search
+the web.
 
-Take a momement to disable any unnecessary services, turn on automatic
-updates, and do any other standard server configuration you like to do.
-The goal is produce a server with nothing much except an ssh daemon.
+Take a momement to disable any unnecessary services, turn on [automatic
+updates][], and do any other standard server configuration you like to do.
+The goal is produce a server with nothing much except an ssh daemon and
+(typically) ntp and dhcp.
 
-Once your kernel is ready, upload and run the `configure-system.sh` script
+Once your server is ready, upload and run the `configure-system.sh` script
 as root.  This should finish configuring the system.  This script is
 "idempotent", in the usual DevOps sense, which means if you run it more
 than once, it shouldn't cause any problems.
 
 Finally, make sure that you can log into the remote server via ssh and use
-`sudo`.  Once that's in place, run:
+`sudo`.  To do, this you will probably need to run `visudo` and edit
+`/etc/sudoers` as follows:
 
-    cat ~/.ssh/id_rsa.pub | ssh example.com -c "sudo gitreceive upload-key `whoami`"
+    %sudo   ALL=(ALL:ALL) NOPASSWD: ALL
+
+Then add your regular account to the `sudo` group:
+
+    usermod -a -G sudo myaccount
+
+Once that's in place, run:
+
+    cat ~/.ssh/id_rsa.pub | ssh example.com sudo gitreceive upload-key `whoami`
     git remote add myserver git@example.com:myproject.git
+
+Note that this makes your regular account and the `git` account both
+equivalent to the `root` account.  You can remove your own account from the
+`sudo` group once your key is set up.  But the `git` account needs to
+retain full privileges, because it needs to be able to deploy arbitrary
+services.  That's the whole point of this exercise.
 
 [ubuntu]: http://docs.docker.io/en/latest/installation/ubuntulinux/
 [linode]: https://blog.linode.com/2014/01/03/docker-on-linode/
+[automatic updates]: https://help.ubuntu.com/10.04/serverguide/automatic-updates.html
 
 ### An example service
 
